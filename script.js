@@ -46,8 +46,8 @@ async function searchKnowledge(q){
     const results=data.results||[];
     const html=results.length?'<div class="result-list">'+results.map((r,i)=>{
       const type=r._type||'result', title=r.collection_name||r.surah_name_en||type;
-      const text=r.text_arabic||r.text_indonesian||r.text||r.name||'';
-      return '<article class="result-item"><span class="result-type">'+esc(type)+'</span><h3>'+esc(title)+'</h3><p class="arabic-result">'+esc(r.text_arabic||'')+'</p><p>'+esc(text)+'</p><small>'+esc(r.hadith_key||r.ayah_key||'')+'</small></article>'
+      const text=r.text_arabic||r.text_hindi||r.text||r.name||'';
+      return '<article class="result-item"><span class="result-type">'+esc(type)+'</span><h3>'+esc(title)+'</h3><p class="arabic-result">'+esc(r.text_arabic||'')+'</p><p>'+esc(r.text_hindi||'Hindi translation is not available from the selected verified source.')+'</p><small>'+esc(r.hadith_key||r.ayah_key||'')+'</small></article>'
     }).join('')+'</div>':'<div class="empty-state">No matching references were found.</div>';
     openModal('Search: '+esc(q),html);
   }catch(e){errorBox(e)}
@@ -75,7 +75,7 @@ async function loadHadith(key='bukhari:1'){
   try{
     const d=await api('/hadith/'+encodeURIComponent(key));
     openModal(esc(d.collection_name||'Hadith')+' — '+esc(d.hadith_number||key),
-      '<div class="detail-card"><div class="arabic-large">'+esc(d.text_arabic||'')+'</div><p>'+esc(d.text_indonesian||'')+'</p><div class="source-line">'+esc((d.grades||[]).map(x=>x.grade).join(', ')||'Reference available')+'</div></div>');
+      '<div class="detail-card"><div class="arabic-large">'+esc(d.text_arabic||'')+'</div><p>'+esc(d.text_hindi||'Hindi translation is not available from the selected verified source.')+'</p><div class="source-line">'+esc((d.grades||[]).map(x=>x.grade).join(', ')||'Reference available')+'</div></div>');
   }catch(e){errorBox(e)}
 }
 async function loadList(endpoint,title,mapper){
@@ -90,11 +90,19 @@ async function loadList(endpoint,title,mapper){
 const simpleMapper=item=>{
   const name=item.name||item.name_en||item.title||item.name_arabic||'';
   const ar=item.arabic||item.text_arabic||item.arabic_text||'';
-  const en=item.meaning||item.translation||item.text_indonesian||item.description||item.benefit||'';
+  const en=item.meaning_hindi||item.translation_hindi||item.text_hindi||item.description_hindi||item.benefit_hindi||'';
   return '<article class="result-item"><h3>'+esc(name)+'</h3><p class="arabic-result">'+esc(ar)+'</p><p>'+esc(en)+'</p></article>'
 };
 
-async function loadDuas(){await loadList('/doa','Daily Duas',simpleMapper)}
+async function loadDuas(){
+  await loadList('/doa','Daily Duas',item=>{
+    const name=item.name_hindi||item.title_hindi||item.name||item.title||'Dua';
+    const ar=item.arabic||item.text_arabic||item.arabic_text||'';
+    const hi=item.text_hindi||item.translation_hindi||item.meaning_hindi||'';
+    const ref=item.reference||item.source||'';
+    return '<article class="result-item"><h3>'+esc(name)+'</h3><p class="arabic-result">'+esc(ar)+'</p><p>'+esc(hi||'इस दुआ का प्रमाणित हिंदी अनुवाद इस API में उपलब्ध नहीं है। हमने जानबूझकर इंडोनेशियाई या मशीन-अनुवाद नहीं दिखाया है।')+'</p><small>'+esc(ref)+'</small></article>'
+  })
+}
 async function loadNames(){await loadList('/asmaul-husna','99 Names of Allah',simpleMapper)}
 async function loadSunnah(){await loadList('/amalan','Sunnah Practices',simpleMapper)}
 async function loadCalendar(){
