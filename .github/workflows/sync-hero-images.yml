@@ -1,0 +1,29 @@
+name: Sync Approved Hero Images
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-hero-images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download approved hero images
+        run: |
+          mkdir -p assets
+          curl -L --fail 'https://at.adobe.com/4Aujv5e7ujxOl5L3' -o assets/hero-left.png
+          curl -L --fail 'https://at.adobe.com/UlOvnbR3HczL4PE7' -o assets/hero-right.png
+      - name: Commit images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/hero-left.png assets/hero-right.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Use user-approved hero images"
+          git push
