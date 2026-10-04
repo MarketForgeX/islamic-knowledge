@@ -59,10 +59,12 @@ async function loadQuran(key='2:255'){
     // No machine translation is performed here.
     const [arabicRes,hindiRes]=await Promise.all([
       api('/quran/'+encodeURIComponent(key)),
-      fetch('https://api.alquran.cloud/v1/ayah/'+encodeURIComponent(key.split(':')[0])+':'+encodeURIComponent(key.split(':')[1])+'/hi.hindi')
+      fetch('https://api.alquran.cloud/v1/surah/'+encodeURIComponent(key.split(':')[0])+'/hi.hindi')
         .then(r=>{if(!r.ok) throw new Error('Hindi Quran translation source is unavailable.'); return r.json()})
     ]);
-    const h=hindiRes.data||{};
+    const surahData=hindiRes.data||{};
+    const ayahNo=Number(key.split(':')[1]);
+    const h=(surahData.ayahs||[]).find(a=>a.numberInSurah===ayahNo)||{};
     const d=arabicRes;
     openModal((d.surah_name_en||'Quran')+' — '+esc(d.ayah_key||key),
       '<div class="detail-card"><div class="arabic-large">'+esc(d.text_arabic||h.text||'')+'</div><p>'+esc(h.text||'Hindi translation unavailable for this ayah.')+'</p><small>Surah '+esc(d.surah_name_en||h.surah?.englishName||'')+' ('+esc(d.ayah_key||key)+') · Hindi edition: hi.hindi</small></div>');
